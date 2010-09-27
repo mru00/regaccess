@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:annotation>
+    <xs:documentation xml:lang="en">
+      Schema for regaccess xml files
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="regaccess" type="RegisterType"/>
+
+  <xs:complexType name="FileType">
+    <xs:sequence minOccurs="0" maxOccurs="100">
+      <xs:element name="register">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="doc" type="xs:string" minOccurs="0"/>
+          </xs:sequence>
+          <xs:attribute name="id" type="xs:unsignedInt"/>
+          <xs:attribute name="name" type="xs:Name"/>
+          <xs:attribute name="default" type="xs:string"/>
+          <xs:attribute name="persist" type="xs:boolean"/>
+          <xs:attribute name="write" type="xs:boolean"/>
+          <xs:attribute name="read" type="xs:boolean"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="type" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="OpcodesType">
+    <xs:sequence minOccurs="0" maxOccurs="100">
+      <xs:element name="opcode">
+        <xs:complexType>
+          <xs:attribute name="id" type="xs:unsignedInt"/>
+          <xs:attribute name="name" type="xs:Name"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="StatusType">
+    <xs:sequence>
+      <xs:element name="statuscode" minOccurs="0" maxOccurs="100">
+        <xs:complexType>
+          <xs:attribute name="id" type="xs:unsignedInt"/>
+          <xs:attribute name="name" type="xs:Name"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RegisterType">
+    <xs:sequence>
+      <xs:element name="file" type="FileType" minOccurs="0" maxOccurs="100"/>
+      <xs:element name="opcodes" type="OpcodesType"/>
+      <xs:element name="status" type="StatusType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

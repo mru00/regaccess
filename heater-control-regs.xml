@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<regaccess xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:noNamespaceSchemaLocation="regaccess.xsd">
+  <file type="byte">
+	<register id="0" name="led_on" default="0"/>
+  </file>
+  <file type="float">
+	<register id="0" name="kp" default="1.0" persist="1">
+	  <doc>some documentation about this register</doc>
+	</register>
+	<register id="1" name="ki" default="0.0" persist="1"/>
+	<register id="2" name="kd" default="0.0" persist="1"/>
+	<register id="3" name="abgas_v1190" default="69.553e-3"/>
+	<register id="4" name="abgas_amp_gain" default="50.0"/>
+	<register id="5" name="vorlauf_v1190" default="69.553e-3"/>
+	<register id="6" name="vorlauf_amp_gain" default="50.0"/>
+  </file>
+  <file type="short">
+	<register id="0" name="temp_vorlauf" default="0" write="0"/>
+	<register id="1" name="temp_abgas" default="0" write="0" />
+	<register id="2" name="temp_ambient" default="25" write="0" persist="1"/>
+	<register id="3" name="controller_output" default="0" write="0" />
+  </file>
+  <opcodes>
+	<opcode id="0" name="PING"/>
+	<opcode id="1" name="READ_BYTE"/>
+	<opcode id="2" name="WRITE_BYTE"/>
+	<opcode id="3" name="READ_FLOAT"/>
+	<opcode id="4" name="WRITE_FLOAT"/>
+	<opcode id="5" name="READ_SHORT"/>
+	<opcode id="6" name="WRITE_SHORT"/>
+	<opcode id="7" name="SPECIAL"/>
+  </opcodes>
+  <status>
+	<statuscode id="0" name="OK"/>
+	<statuscode id="1" name="FAIL"/>
+	<statuscode id="2" name="NO_SUCH_REGISTER"/>
+	<statuscode id="3" name="NO_ACCESS"/>
+	<statuscode id="4" name="INVALID_OPCODE"/>
+	<statuscode id="5" name="NOT_IMPLEMENTED"/>
+	<statuscode id="6" name="PONG"/>
+  </status>
+</regaccess>
