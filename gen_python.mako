@@ -6,14 +6,27 @@ generated interface file for serial communication with avr controller
 based on the xml register definitions
 """
 
-% for k,v in opcodes.items():
-OPCODE_${v} = ${k}
-% endfor
+${",".join(map(lambda o: "OPCODE_FN_" +o, opcodes))} = range(${len(opcodes)})
 
 % for k,v in statuscodes.items():
 STATUSCODE_${v} = ${k}
 % endfor
 
+status_names = {
+% for k,v in statuscodes.items():
+STATUSCODE_${v} : '${v} [${k}]',
+% endfor
+}
+
+class ConnectionException(Exception):
+    def __init__(self, code):
+        self.code = code
+
+    def __str__(self):
+        global status_names
+        if self.code in status_names.keys():
+            return status_names[self.code]
+        return "unknown status code [%d]" % self.code
 
 class RegConnection():
     def __init__(self):
@@ -23,80 +36,61 @@ class RegConnection():
             baudrate=38400,
             parity=serial.PARITY_NONE,
             stopbits=serial.STOPBITS_ONE,
-            bytesize=serial.EIGHTBITS
+            bytesize=serial.EIGHTBITS,
+            timeout=1
             )
 
         self.ser.open()
-        self.ser.isOpen()
-
-
-    def status_to_string(self, status):
-% for k,v in statuscodes.items():
-        if status == STATUSCODE_${v}: return "${v} [${k}]"
-% endfor
-        return "unkown status code [%d]" % status
-        
-    def _read_byte_register(self, id):
-        self.ser.flushInput()
-	self.ser.write(struct.pack("=BB", OPCODE_READ_BYTE, id))
-        ( status, b ) = struct.unpack("=BB", self.ser.read(2))
-        assert status == 0, self.status_to_string(status)
-        return b
-
-    def _write_byte_register(self, id, value):
-        self.ser.flushInput()
-	self.ser.write(struct.pack("=BBB", OPCODE_WRITE_BYTE, id, value))
-        ( status, ) = struct.unpack("=B", self.ser.read(1))
-        assert status == 0, self.status_to_string(status)
-
-    def _read_float_register(self, id):
-        self.ser.flushInput()
-	self.ser.write(struct.pack("=BB", OPCODE_READ_FLOAT, id))
-        ( status, f ) = struct.unpack("=Bf", self.ser.read(5))
-        assert status == 0, self.status_to_string(status)
-        return f
-
-    def _write_float_register(self, id, value):
-        self.ser.flushInput()
-	self.ser.write(struct.pack("=BBf", OPCODE_WRITE_FLOAT, id, value))
-        ( status, ) = struct.unpack("=B", self.ser.read(1))
-        assert status == 0, self.status_to_string(status)
-
-
-    def _read_short_register(self, id):
-        self.ser.flushInput()
-	self.ser.write(struct.pack("=BB", OPCODE_READ_SHORT, id))
-        ( status, s ) = struct.unpack("=BH", self.ser.read(struct.calcsize("=BH")))
-        assert status == 0, self.status_to_string(status)
-        return s 
-
-    def _write_short_register(self, id, value):
-        self.ser.flushInput()
-	self.ser.write(struct.pack("=BBH", OPCODE_WRITE_SHORT, id, value))
-        (status,) = struct.unpack("=B", self.ser.read(1))
-        assert status == 0, self.status_to_string(status)
+        self.ser.isOpen()        
 
     def read_all(self):
         fields = {}
-% for type in files:
-% for r in filter(lambda entry: entry.read, files[type]):
+% for fi in files:
+% for r in filter(lambda entry: entry.read, fi.entries):
         fields["${r.name}"] = self.get_${r.name}()
 % endfor
 % endfor
         return fields
 
-
-
-% for type in files:
-% for r in files[type]:
-
+% for fi in files:
+% for r in fi.entries:
 % if r.read:
     def get_${r.name}(self):
-        return self._read_${type}_register(${r.id})
+        return self.read_${fi.type}_register(${r.id})
 % endif
 % if r.write:
     def set_${r.name}(self, value):
-        self._write_${type}_register(${r.id}, value)
+        self.write_${fi.type}_register(${r.id}, value)
+
 % endif
 % endfor
+% endfor
+
+<%!
+type_map = { 'float':  'f', 
+             'short':  'h',
+             'ushort': 'H',
+             'byte':   'B' }
+size_map= { 'float':  4,
+            'short':  2,
+            'ushort': 2,
+            'byte':   1 }
+%>
+% for fu in fus:
+    def ${fu.name}(self, ${", ".join( map(lambda p: p.name, filter( lambda p: p.direction=="in", fu.params)))}):
+
+        self.ser.flushInput()
+	self.ser.write(struct.pack("=B", OPCODE_FN_${fu.name}))
+% for p in filter(lambda p: p.direction=="in", fu.params):
+	self.ser.write(struct.pack("=${type_map[p.type]}", ${p.name}))
+% endfor
+
+        ( status, ) = struct.unpack("=B", self.ser.read(1))
+        if status != STATUSCODE_OK: 
+            raise ConnectionException(status)
+% for p in filter(lambda p: p.direction=="out", fu.params):
+        ( ${p.name}, ) = struct.unpack("=${type_map[p.type]}", self.ser.read(${size_map[p.type]}));
+% endfor
+        return ${",".join(map(lambda p: p.name,filter( lambda p: p.direction=="out", fu.params)))}
+
 % endfor

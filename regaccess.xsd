@@ -16,35 +16,55 @@
           <xs:sequence>
             <xs:element name="doc" type="xs:string" minOccurs="0"/>
           </xs:sequence>
-          <xs:attribute name="id" type="xs:unsignedInt"/>
-          <xs:attribute name="name" type="xs:Name"/>
+          <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+          <xs:attribute name="name" type="xs:Name" use="required"/>
           <xs:attribute name="default" type="xs:string"/>
-          <xs:attribute name="persist" type="xs:boolean"/>
-          <xs:attribute name="write" type="xs:boolean"/>
-          <xs:attribute name="read" type="xs:boolean"/>
+          <xs:attribute name="persist" type="xs:boolean" default="0"/>
+          <xs:attribute name="write" type="xs:boolean" default="1"/>
+          <xs:attribute name="read" type="xs:boolean" default="1"/>
         </xs:complexType>
       </xs:element>
     </xs:sequence>
     <xs:attribute name="type" type="xs:string"/>
-  </xs:complexType>
 
-  <xs:complexType name="OpcodesType">
-    <xs:sequence minOccurs="0" maxOccurs="100">
-      <xs:element name="opcode">
-        <xs:complexType>
-          <xs:attribute name="id" type="xs:unsignedInt"/>
-          <xs:attribute name="name" type="xs:Name"/>
-        </xs:complexType>
-      </xs:element>
-    </xs:sequence>
+	<!-- default value for initializing local variables -->
+    <xs:attribute name="init" type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="StatusType">
     <xs:sequence>
       <xs:element name="statuscode" minOccurs="0" maxOccurs="100">
         <xs:complexType>
-          <xs:attribute name="id" type="xs:unsignedInt"/>
-          <xs:attribute name="name" type="xs:Name"/>
+          <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+          <xs:attribute name="name" type="xs:Name" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="FunctionsType">
+    <xs:sequence>
+      <xs:element name="function" minOccurs="0" maxOccurs="100">
+        <xs:complexType>
+
+          <xs:sequence>
+            <xs:element name="param" minOccurs="0" maxOccurs="100">
+              <xs:complexType>
+                <xs:attribute name="name" type="xs:Name" use="required"/>
+                <xs:attribute name="type" type="xs:Name" use="required"/>
+                <xs:attribute name="direction" default="in">
+				  <xs:simpleType>
+					<xs:restriction base="xs:string">
+					  <xs:enumeration value="in"/>
+					  <xs:enumeration value="out"/>
+					</xs:restriction>
+				  </xs:simpleType>
+				</xs:attribute>
+              </xs:complexType>
+            </xs:element>
+          </xs:sequence>
+
+          <xs:attribute name="name" type="xs:Name" use="required"/>
         </xs:complexType>
       </xs:element>
     </xs:sequence>
@@ -53,9 +73,13 @@
   <xs:complexType name="RegisterType">
     <xs:sequence>
       <xs:element name="file" type="FileType" minOccurs="0" maxOccurs="100"/>
-      <xs:element name="opcodes" type="OpcodesType"/>
       <xs:element name="status" type="StatusType"/>
+      <xs:element name="functions" type="FunctionsType"/>
     </xs:sequence>
+    <xs:attribute name="if_version" type="xs:unsignedInt" use="required"/>
   </xs:complexType>
 
 </xs:schema>
+
+<!--  LocalWords:  regaccess
+  -->

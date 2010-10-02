@@ -1,34 +1,47 @@
+<%!
+def gen_actual_params(fu):
+    return ",".join( map(lambda p: ('&' if p.direction=='out' else '') + p.name, fu))
+
+def gen_formal_params(fu):
+    if len(fu) == 0:
+        return "void"
+    return ",".join( map(lambda p: p.type + " " + ('*' if p.direction=='out' else '') + p.name, fu))
+%><%
+init_values = {}
+for fi in files:
+  init_values[fi.type] = fi.init
+%>\
 #include <avr/eeprom.h>
 
 #include "common.h"
 
 #define EEPROM_VALID_MASK 0xA5
 
-% for k,v in opcodes.items():
-#define REG_OP_${v} ${k}
+enum {
+% for o in opcodes:
+REG_OP_${o},
 % endfor
+};
 
 % for k,v in statuscodes.items():
 #define REG_ST_${v}  ${k}
 % endfor
 
+byte ping(void) { return 0; }
+
+byte get_fw_version(void) { return 0; }
+byte get_if_version(byte* version) { return ${if_version}; }
+
 
 // ----------------------- file definitions
 
-% for type in files:
-typedef struct {
-% for r in files[type]:
-  ${type} ${r.name};     // ${r.doc}
-% endfor
-} reg_${type}_t;
-
-% endfor
-
 // register in memory layout
-typedef struct  {
-% for type in files:
-  reg_${type}_t reg_${type};
-%endfor
+typedef struct {
+% for fi in files:
+% for r in fi.entries:
+  ${fi.type} ${r.name};     // ${r.doc}
+% endfor
+% endfor
 } reg_file_t;
 
 volatile reg_file_t reg_file;
@@ -37,9 +50,9 @@ volatile reg_file_t reg_file;
 // persistance of variables: eeprom layout
 
 typedef struct {
-% for type in files:
-% for r in filter(lambda entry: entry.persist, files[type]):
-  ${type} pers_${type}_${r.name};
+% for fi in files:
+% for r in filter(lambda entry: entry.persist, fi.entries):
+  ${fi.type} ${r.name};
 % endfor
 % endfor
 } reg_file_persist_t;
@@ -49,29 +62,31 @@ reg_file_persist_t reg_persist_eeprom EEMEM;
 uint8_t ee_valid_configuration EEMEM;
 
 
-extern void regfile_init(void) {
-% for type in files:
-% for r in filter(lambda entry: entry.default, files[type]):
-  reg_file.reg_${type}.${r.name} = ${r.default};
+static void __attribute__((constructor))
+regfile_autoinit(void) 
+{
+% for fi in files:
+% for r in filter(lambda entry: entry.default, fi.entries):
+  reg_file.${r.name} = ${r.default};
 % endfor
 % endfor
 	
   if ( eeprom_read_byte(&ee_valid_configuration) == EEPROM_VALID_MASK) {
 	  
-% for type in files:
-% for r in filter(lambda entry: entry.persist, files[type]):
-    eeprom_read_block ((void *) &reg_file.reg_${type}.${r.name}, 
-					   (const void *) &reg_persist_eeprom.pers_${type}_${r.name}, 
-					   sizeof(${type}));
+% for fi in files:
+% for r in filter(lambda entry: entry.persist, fi.entries):
+    eeprom_read_block ((void *) &reg_file.${r.name}, 
+					   (const void *) &reg_persist_eeprom.${r.name}, 
+					   sizeof(${fi.type}));
 % endfor
 % endfor
   }
   else {
-% for type in files:
-% for r in filter(lambda entry: entry.persist, files[type]):
-    eeprom_write_block( (const void*) &reg_file.reg_${type}.${r.name}, 
-						&reg_persist_eeprom.pers_${type}_${r.name}, 
-						sizeof(${type}));
+% for fi in files:
+% for r in filter(lambda entry: entry.persist, fi.entries):
+    eeprom_write_block( (const void*) &reg_file.${r.name}, 
+						&reg_persist_eeprom.${r.name}, 
+						sizeof(${fi.type}));
 % endfor
 % endfor
     eeprom_write_byte(&ee_valid_configuration, EEPROM_VALID_MASK);
@@ -82,40 +97,40 @@ extern void regfile_init(void) {
 
 // ----------------------- file accessors
 
-% for type in files:
-% for r in files[type]:
+% for fi in files:
+% for r in fi.entries:
 
-extern ${type} get_${r.name}(void) { return reg_file.reg_${type}.${r.name}; }
-extern void  set_${r.name}(const ${type} f) {   
-  reg_file.reg_${type}.${r.name} = f; 
+extern ${fi.type} get_${r.name}(void) { return reg_file.${r.name}; }
+extern void  set_${r.name}(const ${fi.type} v) {   
+  reg_file.${r.name} = v; 
 % if r.persist:
-  eeprom_write_block( (const void*) &reg_file.reg_${type}.${r.name}, 
-					  &reg_persist_eeprom.pers_${type}_${r.name}, 
-					  sizeof(${type}));  
+  eeprom_write_block( (const void*) &reg_file.${r.name}, 
+					  &reg_persist_eeprom.${r.name}, 
+					  sizeof(${fi.type}));  
 % endif
 }
 % endfor
 % endfor
 
-% for type in files:
-static byte read_${type}_register(const byte id, ${type}* value)  {
+% for fi in filter(lambda f: len(f.entries) > 0, files):
+static byte read_${fi.type}_register(const byte id, ${fi.type}* value)  {
   switch(id) {
-% for r in filter(lambda entry: entry.read, files[type]):
+% for r in filter(lambda entry: entry.read, fi.entries):
   case ${r.id}: *value = get_${r.name}(); return REG_ST_OK; break;
 % endfor
-% for r in filter(lambda entry: not entry.read, files[type]):
+% for r in filter(lambda entry: not entry.read, fi.entries):
   case ${r.id}: return REG_ST_NO_ACCESS; break;
 % endfor
   }
   return REG_ST_NO_SUCH_REGISTER;
 }
 
-static byte write_${type}_register(const byte id, const ${type} value)  {
+static byte write_${fi.type}_register(const byte id, const ${fi.type} value)  {
   switch(id) {
-% for r in filter(lambda entry: entry.write, files[type]):
+% for r in filter(lambda entry: entry.write, fi.entries):
   case ${r.id}: set_${r.name}(value); return REG_ST_OK; break;
 % endfor
-% for r in filter(lambda entry: not entry.write, files[type]):
+% for r in filter(lambda entry: not entry.write, fi.entries):
   case ${r.id}: return REG_ST_NO_ACCESS; break;
 % endfor
   }
@@ -145,7 +160,14 @@ static float receive_float(void) {
 }
 
 static short receive_short(void) {
-  union { char b[2]; float f; } v;
+  union { char b[2]; short f; } v;
+  v.b[0] = receive_byte();
+  v.b[1] = receive_byte();
+  return v.f;
+}
+
+static short receive_ushort(void) {
+  union { char b[2]; ushort f; } v;
   v.b[0] = receive_byte();
   v.b[1] = receive_byte();
   return v.f;
@@ -173,62 +195,44 @@ static void send_short(const short value) {
   send_byte( v.b[1] );
 }
 
-extern void receive_reg(const uint8_t ch) {
+static void send_ushort(const short value) {
+  union { char b[2]; ushort f; } v;
+  v.f = value;
 
-  byte id = 0;
+  send_byte( v.b[0] );
+  send_byte( v.b[1] );
+}
+
+extern void on_receive_byte(const uint8_t ch) {
+
   byte status = 0;
-  union {
-	float f;
-	byte b;
-	short s;
-  } v;
 
   switch(ch) {
-  case REG_OP_PING:
-	send_byte(REG_ST_PONG);
-	break;
-  case REG_OP_READ_BYTE:
-	id = receive_byte();
-	status = read_byte_register(id, &v.b);
-	send_byte(status);
-	if ( REG_ST_OK == status ) send_byte(v.b);
-	break;
-  case REG_OP_WRITE_BYTE:
-	id = receive_byte();
-	v.b = receive_byte();
-	status = write_byte_register(id, v.b);
-	send_byte(status);
-	break;
-  case REG_OP_READ_FLOAT:
-	id = receive_byte();
-	status = read_float_register(id, &v.f);
-	send_byte(status);
-	if ( REG_ST_OK == status ) send_float(v.f);
-	break;
-  case REG_OP_WRITE_FLOAT:
-	id = receive_byte();
-	v.f = receive_float();
-	status = write_float_register(id, v.f);
-	send_byte(status);
-	break;
-  case REG_OP_READ_SHORT:
-	id = receive_byte();
-	read_short_register(id, &v.s);
-	send_byte(status);
-	if ( REG_ST_OK == status ) send_short(v.s);
-	break;
-  case REG_OP_WRITE_SHORT:
-	id = receive_byte();
-	v.s = receive_short();
-	status = write_short_register(id, v.s);
-	send_byte(status);
-	break;
-  case REG_OP_SPECIAL:
-	send_byte(REG_ST_NOT_IMPLEMENTED);
-	break;
+% for fu in fus:
+  case REG_OP_${fu.name}: {
+% for p in filter(lambda p: p.direction=="in", fu.params):
+	  ${p.type} ${p.name} = receive_${p.type}();
+% endfor
+% for p in filter(lambda p: p.direction=="out", fu.params):
+	  ${p.type} ${p.name} = ${init_values[p.type]};
+% endfor
+
+      status = ${fu.name}(${gen_actual_params(fu.params)});
+
+	  send_byte(status);
+% if len(filter(lambda p: p.direction=="out", fu.params)) > 0:
+	  if ( REG_ST_OK == status ) {
+% for p in filter(lambda p: p.direction=="out", fu.params):
+	    send_${p.type}(${p.name});
+% endfor
+	  }
+% endif
+	}
+    break;
+% endfor
+
   default:
 	send_byte(REG_ST_INVALID_OPCODE);
   }
 }
-
 

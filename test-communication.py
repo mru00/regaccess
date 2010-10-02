@@ -2,13 +2,22 @@ import time
 from heatercontrol import *
 
 r = RegConnection()
-i = 0.0
 led = 1
-while True:
-    print "reading: ", r.read_all()
-    r.set_led_on(led)
-    if led == 1: led = 0
-    else: led =1
-    i += 0.333
+inv = { 0: 1, 1: 0 }
+i = 1
 
-    time.sleep(.01)
+c1 = time.clock()
+
+while True:
+#    print "reading: ", r.read_all()
+    r.set_led(led)
+    print "time: %f [msec]" % (1000.0*(time.clock() - c1)/float(i))
+    i += 1
+    try:
+        pass
+#        r.ping()
+    except (ConnectionException):
+        print "failed to communicate!"
+    led = inv[led]
+
+#    time.sleep(.01)

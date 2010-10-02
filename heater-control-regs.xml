@@ -1,36 +1,35 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <regaccess xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-         xsi:noNamespaceSchemaLocation="regaccess.xsd">
-  <file type="byte">
-	<register id="0" name="led_on" default="0"/>
+           xsi:noNamespaceSchemaLocation="regaccess.xsd"
+		   if_version="2">
+
+  <file type="byte" init="0">
   </file>
-  <file type="float">
+
+  <file type="float" init="0.0">
 	<register id="0" name="kp" default="1.0" persist="1">
-	  <doc>some documentation about this register</doc>
+	  <doc>propotional factor for pid controller</doc>
 	</register>
-	<register id="1" name="ki" default="0.0" persist="1"/>
+	<register id="1" name="ki" default="0.0" persist="1">
+	  <doc>integral factor for pid controller</doc>
+	</register>
 	<register id="2" name="kd" default="0.0" persist="1"/>
 	<register id="3" name="abgas_v1190" default="69.553e-3"/>
 	<register id="4" name="abgas_amp_gain" default="50.0"/>
 	<register id="5" name="vorlauf_v1190" default="69.553e-3"/>
 	<register id="6" name="vorlauf_amp_gain" default="50.0"/>
   </file>
-  <file type="short">
+
+  <file type="short" init="0">
 	<register id="0" name="temp_vorlauf" default="0" write="0"/>
 	<register id="1" name="temp_abgas" default="0" write="0" />
 	<register id="2" name="temp_ambient" default="25" write="0" persist="1"/>
 	<register id="3" name="controller_output" default="0" write="0" />
   </file>
-  <opcodes>
-	<opcode id="0" name="PING"/>
-	<opcode id="1" name="READ_BYTE"/>
-	<opcode id="2" name="WRITE_BYTE"/>
-	<opcode id="3" name="READ_FLOAT"/>
-	<opcode id="4" name="WRITE_FLOAT"/>
-	<opcode id="5" name="READ_SHORT"/>
-	<opcode id="6" name="WRITE_SHORT"/>
-	<opcode id="7" name="SPECIAL"/>
-  </opcodes>
+
+  <file type="ushort" init="0">
+  </file>
+
   <status>
 	<statuscode id="0" name="OK"/>
 	<statuscode id="1" name="FAIL"/>
@@ -40,4 +39,53 @@
 	<statuscode id="5" name="NOT_IMPLEMENTED"/>
 	<statuscode id="6" name="PONG"/>
   </status>
+
+  <functions>
+
+	<function name="write_float_register">
+	  <param type="byte" name="id"/>
+	  <param type="float" name="value"/>
+	</function>
+
+	<function name="write_short_register">
+	  <param type="byte" name="id"/>
+	  <param type="short" name="value"/>
+	</function>
+<!--
+	<function name="write_byte_register">
+	  <param type="byte" name="id"/>
+	  <param type="byte" name="value"/>
+	</function>
+-->
+	<function name="read_float_register">
+	  <param type="byte" name="id"/>
+	  <param type="float" name="value" direction="out"/>
+	</function>
+
+	<function name="read_short_register">
+	  <param type="byte" name="id"/>
+	  <param type="short" name="value" direction="out"/>
+	</function>
+<!--
+	<function name="read_byte_register">
+	  <param type="byte" name="id"/>
+	  <param type="byte" name="value" direction="out"/>
+	</function>
+-->
+
+	<function name="set_led">
+	  <param type="byte" name="on"/>
+	</function>
+
+	<function name="get_if_version">
+	  <param type="byte" name="version" direction="out"/>
+	</function>
+
+	<function name="ping"/>
+
+    <function name="ln5623_set_output">
+	  <param type="ushort" name="value"/>
+	  <param type="byte" name="dp"/>
+	</function>
+  </functions>
 </regaccess>
