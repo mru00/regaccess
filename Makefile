@@ -4,7 +4,7 @@ REG = python regaccess-gen.py -i $(MD)
 OD  = ~/dev/01atmel/heater-control/firmware
 
 .PHONY: test
-test: $(OD)/regaccess.c $(OD)/regaccess.h heatercontrol.py
+test: $(OD)/regaccess.c $(OD)/regaccess.h heatercontrol.py heatercontrol.cs
 
 .PHONY: validate
 validate:
@@ -15,12 +15,17 @@ validate:
 $(OD)/regaccess.c: $(OD)/regaccess.h gen_avr_impl.mako $(XML) regaccess-gen.py
 	$(REG) $(XML) gen_avr_impl.mako > $@
 
+
 $(OD)/regaccess.h: gen_avr_header.mako  $(XML) regaccess-gen.py | validate
 	$(REG) $(XML) gen_avr_header.mako > $@
 
 heatercontrol.py:  $(XML) gen_python.mako regaccess-gen.py
 	$(REG) $(XML) gen_python.mako > $@
 	-pychecker -Q $@
+
+heatercontrol.cs:  $(XML) gen_csharp.mako regaccess-gen.py test-csharp.cs
+	$(REG) $(XML) gen_csharp.mako > $@
+	gmcs $@ test-csharp.cs
 
 test-sizes: test-sizes.c
 
