@@ -1,0 +1,8 @@
+# -*- perl -*-
+# latexmk configuration file
+
+$pdf_previewer = 'start evince';
+#@default_files = (!<MKUE_EX_NAME>);
+$print_type = 'pdf';
+$pdf_mode = 1;
+$pdflatex = 'pdflatex -interaction=nonstopmode -haltonerror';
