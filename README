@@ -1,0 +1,27 @@
+regaccess - invoke functions on microcontroller over serial port
+
+mru <mru@sisyphus.teil.cc>
+2011-01
+
+
+
+== INTRO ==
+
+this program creates 
+
+  * embedded c code
+  * high-level code
+
+to easily interact with an microcontroller from pc software
+
+A XML is used to define available functions, via templates the implementation for the microcontroller is generated.
+Also, several generators are available for different pc programming environments
+  + python
+  + csharp/.net
+
+
+== TODO ==
+
+== BUGS ==
+
+
